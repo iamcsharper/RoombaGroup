@@ -16,6 +16,9 @@
 
 #define DRIVE_PERIOD 20
 
+void drivePIDWall(float minimum);
+bool hasFrontObstacle();
+bool isFrontClear();
 bool doSeeVirtualWall();
 void roomba_init();
 void roomba_loop();

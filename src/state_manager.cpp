@@ -38,51 +38,26 @@ void state_manager_init()
 {
 }
 
-// PID
 #define roomLength 170
 #define roomWidth 20
 
-int pid_p = 2;
-int pid_d = -20;
-float pid_i = 0;
-float pid_s = 0.7f;
-float reg = 0;
-float prev_dis = 0;
-float integral = 0;
-
-int minimum = -1;
 MoveState stateAfterRotation = AlongWallUntilObstacle;
 int wallIndex = 0;
 float untilDistance = 0;
+
+float minimum = -1;
 
 void resetGlassCorridor()
 {
 }
 
-void driveNearWall()
-{
-  float dis = (sonar_get(0) - minimum) * 0.01;
-
-  reg = dis * pid_p - (dis - prev_dis) * pid_d - integral * pid_i;
-
-  integral += dis;
-
-  driveDirect(250 * clamp(-reg + pid_s, -pid_s, pid_s), 250 * clamp(reg + pid_s, -pid_s, pid_s));
-
-  prev_dis = dis;
-}
-
-// END PID
-
 MoveState stateAfterObstacle = Stop;
 
-void awaitObstacle()
+void awaitObstacle(float until, float trig)
 {
-  int frontDistance = (sonar_get(3) + sonar_get(2)) / 2;
-
-  if (frontDistance > 0 && frontDistance < 40)
+  if (lastCoveredDistance < until - trig && hasObjectInFront())
   {
-    setLED(false, false, false, true);
+    driveDirect(0, 0);
     stateAfterObstacle = moveState;
     moveState = AwaitObstacleLeave;
   }
@@ -90,9 +65,7 @@ void awaitObstacle()
 
 void awaitObstacleLeave()
 {
-  int frontDistance = (sonar_get(3) + sonar_get(2)) / 2;
-
-  if (frontDistance == 0 || frontDistance > 50)
+  if (hasGoneObjectInFront())
   {
     moveState = stateAfterObstacle;
   }
@@ -156,6 +129,8 @@ void state_manager_loop()
       globalState = prevState;
     }
   }
+  // Только вика ездит в стеклянном корридоре
+#if ROOMBA_NUM == 0
   else if (globalState == glass_corridor)
   {
     if (minimum < 0)
@@ -166,18 +141,26 @@ void state_manager_loop()
     if (millis() >= lastBlinkTime)
     {
       lastBlinkTime = millis() + 200;
+      int left = sonar_get(3);
+      int right = sonar_get(2);
 
-      print_f("0:%i     1:%i    2=%i    3:%i     4:%i     5:%i\n", sonar_get(0), sonar_get(1), sonar_get(2), sonar_get(3), sonar_get(4), sonar_get(5));
+      if (left == 0)
+        left = 200;
+      if (right == 0)
+        right = 200;
+
+      int dist = (int)(2.0f / (1.0f / left + 1.0f / right));
+
+      print_f("0:%i     2=%i    3:%i      medium:%i\n", sonar_get(0), sonar_get(2), sonar_get(3), dist);
       //print_f("front:%i     encoderLeft:%i    encoderRight=%i    dist:%f     until:%f\n", sonar_get(2), encoderLeft, encoderRight, lastCoveredDistance, untilDistance);
     }
 
-    if (moveState != Left && moveState != RotatingLeft && moveState != AwaitObstacleLeave)
-    {
-      // Если видим препятствие ОП по тормозам, запоминаем состояние
-      awaitObstacle();
-    }
-
     int frontDistance = sonar_get(2);
+
+    if (frontDistance < 1)
+    {
+      frontDistance = 200;
+    }
 
     if (moveState == AwaitObstacleLeave)
     {
@@ -189,7 +172,8 @@ void state_manager_loop()
     }
     else if (moveState == AlongWallUntilObstacle)
     {
-      driveNearWall();
+      drivePIDWall(minimum);
+      awaitObstacle(roomLength, 50);
 
       //print_f("0: %i      1: %i    2: %i    3: %i    4: %i     5: %i\n", sonar_get(0), sonar_get(1), sonar_get(2), sonar_get(3), sonar_get(4), sonar_get(5));
 
@@ -203,7 +187,9 @@ void state_manager_loop()
     }
     else if (moveState == AlongWallUntilDistance)
     {
-      driveNearWall();
+      drivePIDWall(minimum);
+      awaitObstacle(untilDistance, 40);
+
       if (areWeAtDestination() || doSeeVirtualWall())
       {
         //movementType = Stop;
@@ -220,25 +206,18 @@ void state_manager_loop()
     else if (moveState == GoingForward)
     {
       driveForwardWithRegulation(100, encoderLeft - lastLeftEnc, encoderRight - lastRightEnc);
+      awaitObstacle(untilDistance, 50);
 
-      if (wallIndex == 1)
+      if (frontDistance < 22 && areWeAtDestination())
       {
-        if (frontDistance < 22 && areWeAtDestination())
+        if (wallIndex == 1)
         {
-          minimum = minimum * 0.6 + 0.4 * frontDistance;
-          moveState = Left;
-          stateAfterRotation = AlongWallUntilDistance;
           untilDistance = roomLength;
         }
-      }
-      else
-      {
-        if (areWeAtDestination() && frontDistance < 22)
-        {
-          minimum = minimum * 0.6 + 0.4 * frontDistance;
-          moveState = Left;
-          stateAfterRotation = AlongWallUntilObstacle;
-        }
+
+        minimum = minimum * 0.4 + 0.6 * frontDistance;
+        moveState = Left;
+        stateAfterRotation = AlongWallUntilObstacle;
       }
     }
     else if (moveState == Left)
@@ -266,6 +245,7 @@ void state_manager_loop()
 
     // end glass corridor
   }
+#endif
   else if (globalState == long_corridor)
   {
     // end long corridor
