@@ -2,6 +2,8 @@
 #include "roomba.h"
 #include "sonar.h"
 
+
+
 const int ddPin = 22;
 unsigned long driveTime = 0;
 uint8_t bumpsWheeldrops = 0; //7
@@ -378,11 +380,6 @@ bool hasFrontObstacle()
   return lbCenterLeft > 20 || lbCenterRight > 20;
 }
 
-// PID
-int pid_p = 2;
-int pid_d = -20;
-float pid_i = 0;
-float pid_s = 0.7f;
 float reg = 0;
 float prev_dis = 0;
 float integral = 0;
