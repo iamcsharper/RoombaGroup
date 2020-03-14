@@ -78,10 +78,11 @@ MoveState stateAfterObstacle = Stop;
 
 void awaitObstacle()
 {
-  int frontDistance = sonar_get(2);
+  int frontDistance = (sonar_get(3) + sonar_get(2)) / 2;
 
-  if (frontDistance > 0 && frontDistance < 23)
+  if (frontDistance > 0 && frontDistance < 40)
   {
+    setLED(false, false, false, true);
     stateAfterObstacle = moveState;
     moveState = AwaitObstacleLeave;
   }
@@ -89,9 +90,9 @@ void awaitObstacle()
 
 void awaitObstacleLeave()
 {
-  int frontDistance = sonar_get(2);
+  int frontDistance = (sonar_get(3) + sonar_get(2)) / 2;
 
-  if (frontDistance == 0 || frontDistance > 32)
+  if (frontDistance == 0 || frontDistance > 50)
   {
     moveState = stateAfterObstacle;
   }
@@ -102,12 +103,12 @@ bool areWeAtDestination()
   return (lastCoveredDistance > untilDistance || abs(lastCoveredDistance - untilDistance) < 4);
 }
 
+float extraRot = 0;
+
 bool areWeAtAngle()
 {
   return abs(lastRotationDelta - extraRot - HALF_PI) < 0.01f;
 }
-
-float extraRot = 0;
 
 void state_manager_loop()
 {
@@ -166,10 +167,11 @@ void state_manager_loop()
     {
       lastBlinkTime = millis() + 200;
 
-      print_f("front:%i     encoderLeft:%i    encoderRight=%i    dist:%f     until:%f\n", sonar_get(2), encoderLeft, encoderRight, lastCoveredDistance, untilDistance);
+      print_f("0:%i     1:%i    2=%i    3:%i     4:%i     5:%i\n", sonar_get(0), sonar_get(1), sonar_get(2), sonar_get(3), sonar_get(4), sonar_get(5));
+      //print_f("front:%i     encoderLeft:%i    encoderRight=%i    dist:%f     until:%f\n", sonar_get(2), encoderLeft, encoderRight, lastCoveredDistance, untilDistance);
     }
 
-    if (moveState == GoingForward || moveState == AlongWallUntilDistance || moveState == AlongWallUntilObstacle)
+    if (moveState != Left && moveState != RotatingLeft && moveState != AwaitObstacleLeave)
     {
       // Если видим препятствие ОП по тормозам, запоминаем состояние
       awaitObstacle();
@@ -177,7 +179,7 @@ void state_manager_loop()
 
     int frontDistance = sonar_get(2);
 
-    if (moveState = AwaitObstacleLeave)
+    if (moveState == AwaitObstacleLeave)
     {
       awaitObstacleLeave(); //меняем состояние назад при удачном стечении обстоятельств
     }
@@ -257,6 +259,9 @@ void state_manager_loop()
         resetInitEncoders();
         wallIndex = (wallIndex + 1) % 4;
       }
+
+      lastLeftEnc = encoderLeft;
+      lastRightEnc = encoderRight;
     }
 
     // end glass corridor
