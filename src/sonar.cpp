@@ -77,6 +77,63 @@ int _readCmSonar(uint8_t sonar_num)
 
 int i = 0;
 
+unsigned int lastPeakTime = 250;
+int lastRight = 0;
+
+int lastRightVals[6];
+
+int getLastMin()
+{
+    int min = lastRightVals[0];
+
+    for (int i = 1; i < 6; i++)
+    {
+        if (lastRightVals[i] < min) {
+            min = lastRightVals[i];
+        }
+    }
+
+    return min;
+}
+
+int getLastMax()
+{
+    int max = lastRightVals[0];
+
+    for (int i = 1; i < 6; i++)
+    {
+        if (lastRightVals[i] > max) {
+            max = lastRightVals[i];
+        }
+    }
+
+    return max;
+}
+
+bool firstTime = true;
+
+int getRightPeak(int minimum)
+{
+    int sonarRight = sonar_get(0);
+    int delta = sonarRight - lastRight; // TODO: try to replace lastSonarRight with minimum
+    lastRight = sonarRight;
+
+    if (abs(delta) > MIN_WALL_THICKNESS && millis() - lastPeakTime > MAX_TIME_PASS_WALL)
+    {
+        // Purge first (from zero pos)
+        if (firstTime) {
+            firstTime = false;
+            return 0;
+        }
+
+        lastPeakTime = millis();
+
+        return delta;
+    }
+
+    return 0;
+}
+
 void sonar_loop()
 {
     if (millis() >= timers[i])
@@ -118,6 +175,14 @@ void sonar_loop()
             sonar_values[i] = distance;
         }
     }
+
+    lastRightVals[0] = lastRightVals[1];
+    lastRightVals[1] = lastRightVals[2];
+    lastRightVals[2] = lastRightVals[3];
+    lastRightVals[3] = lastRightVals[4];
+    lastRightVals[4] = lastRightVals[5];
+    lastRightVals[5] = sonar_get(0);
+
     i = (i + 1) % 6;
 }
 
