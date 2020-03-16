@@ -49,9 +49,13 @@ void resetGlassCorridor()
 {
 }
 
+// Обработка препятствий
 void awaitObstacle(float until, float trig)
 {
-  if (lastCoveredDistance < until - trig && hasObjectInFront())
+  if (lastCoveredDistance >= until - trig)
+    return;
+
+  if (hasObjectInFront())
   {
     driveDirect(0, 0);
     stateAfterHitObstacle = moveState;
@@ -74,10 +78,16 @@ bool areWeAtDestination()
 
 float extraRot = 0;
 
+float howCloseIsAngle() {
+  return abs(lastRotationDelta - extraRot - HALF_PI);
+}
+
 bool areWeAtAngle()
 {
-  return abs(lastRotationDelta - extraRot - HALF_PI) < 0.01f;
+  return howCloseIsAngle() < 0.01f;
 }
+
+MoveState lastState;
 
 void state_manager_loop()
 {
@@ -229,9 +239,6 @@ void state_manager_loop()
         resetInitEncoders();
         wallIndex = (wallIndex + 1) % 4;
       }
-
-      lastLeftEnc = encoderLeft;
-      lastRightEnc = encoderRight;
     }
 
     // end glass corridor
@@ -245,15 +252,8 @@ void state_manager_loop()
       minimum = sonar_get(0);
     }
 
-   
-
     // Get center-right distance from about 5 to 300 cm
-    int frontDistance = sonar_get(2);
-
-    if (frontDistance < 1)
-    {
-      frontDistance = 300;
-    }
+    int frontDistance = sonar_get(2) < 1 ? 300 : sonar_get(2);
 
     if (moveState == AwaitObstacleLeave)
     {
@@ -266,24 +266,28 @@ void state_manager_loop()
     else if (moveState == AlongWallUntilDistance) // 0, 2
     {
       drivePIDWall(minimum);
-   
+
       // For debugging with console :)
       if (millis() >= lastBlinkTime)
       {
         lastBlinkTime = millis() + 200;
-        print_f("Right: %i ; Peak: %i ; Min: %i\n", sonar_get(0), getRightPeak(minimum), (int)minimum);
+        print_f("Journey: %i ; Target distance: %i ; Right: %i ; Min: %i\n", (int)lastCoveredDistance, sonar_get(0), (int)minimum);
+        if (moveState != lastState) {
+          print_f("CHANGED STATE: %i\n");
+        }
+
       }
-      
+
       ///  |
       ///  |
-      ///  |        
-      ///  |____       <-->       
+      ///  |
+      ///  |____       <-->
       ///^     |
       // ()    |
 
       minimum += getRightPeak(minimum); // обратно меняем
 
-      awaitObstacle(untilDistance, 40);
+      awaitObstacle(untilDistance, 30 + 2 * minimum);
 
       if (areWeAtDestination() || doSeeVirtualWall())
       {
@@ -295,20 +299,19 @@ void state_manager_loop()
     }
     else if (moveState == Forward)
     {
-      driveDirect(50, 50);
+      driveForwardWithRegulation(100, encoderLeft - lastLeftEnc, encoderRight - lastRightEnc);
       moveState = GoingForward;
     }
     else if (moveState == GoingForward)
     {
       driveForwardWithRegulation(100, encoderLeft - lastLeftEnc, encoderRight - lastRightEnc);
-      awaitObstacle(untilDistance, 50);
+      awaitObstacle(untilDistance, 35 + 2 * minimum);
 
-      if (frontDistance < 22 && areWeAtDestination())
+      if (frontDistance < minimum+10 && areWeAtDestination())
       {
         stateAfterRotation = AlongWallUntilDistance;
         untilDistance = roomLength;
         moveState = Left;
-        minimum = minimum * 0.4 + 0.6 * frontDistance;
       }
     }
     else if (moveState == Left)
@@ -316,22 +319,22 @@ void state_manager_loop()
       extraRot = (encoderLeft - encoderRight) / TICKS_ONE_TURN * PI;
       resetInitEncoders();
       moveState = RotatingLeft;
+      driveDirect(0, 0);
     }
     else if (moveState == RotatingLeft)
     {
-      driveRotateWithRegulation(70, 1, encoderLeft - lastLeftEnc, encoderRight - lastRightEnc);
+      driveRotateWithRegulation(100*clamp(howCloseIsAngle(), 0.5f, 1), 1, encoderLeft - lastLeftEnc, encoderRight - lastRightEnc);
 
       if (areWeAtAngle())
       {
+        minimum = sonar_get(0);
+
         driveDirect(0, 0);
         //minimum = sonar_get(0);
         moveState = stateAfterRotation;
         resetInitEncoders();
         wallIndex = (wallIndex + 1) % 4;
       }
-
-      lastLeftEnc = encoderLeft;
-      lastRightEnc = encoderRight;
     }
     // end long corridor
   }
@@ -363,4 +366,6 @@ void state_manager_loop()
   {
     // end return base
   }
+
+  lastState = moveState;
 }

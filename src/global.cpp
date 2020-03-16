@@ -22,7 +22,7 @@ bool hasObjectInFront()
   int dist = (int)(2.0f / (1.0f / left + 1.0f / right));
 
   // Мы еще не доехали до until
-  return (dist < 40 || hasFrontObstacle());
+  return (dist < 50 || hasFrontObstacle());
 }
 
 bool hasGoneObjectInFront() {

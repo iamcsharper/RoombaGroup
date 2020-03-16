@@ -4,9 +4,9 @@
 
 #define DEBUG_ENABLED true
 
-#define ROOMBA_NUM 1
 // 0 - Вика
 // 1 - Марина
+#define ROOMBA_NUM 1
 
 // PID SETTINGS
 #if ROOMBA_NUM == 0
@@ -19,15 +19,15 @@ static const float pid_s = 0.7f;
 
 // PID SETTINGS END
 #elif ROOMBA_NUM == 1
-static const int pid_p = 2;
-static const int pid_d = -20;
+static const int pid_p = 1;
+static const int pid_d = -25;
 static const float pid_i = 0;
 static const float pid_s = 0.9f;
 
 #define default_state long_corridor
 
-#define MIN_WALL_THICKNESS 10
-#define MAX_TIME_PASS_WALL 500 // ms of DIFFERENTIAL pulse
+#define MIN_WALL_THICKNESS 5
+#define MAX_TIME_PASS_WALL 200 // ms of DIFFERENTIAL pulse
 
 #endif
 
@@ -41,8 +41,8 @@ static const float pid_s = 0.9f;
 
 #elif ROOMBA_NUM == 1
 
-#define roomLength 600
-#define roomWidth 100
+#define roomLength 330
+#define roomWidth 120
 
 #endif
 

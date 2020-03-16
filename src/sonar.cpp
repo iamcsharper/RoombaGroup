@@ -7,8 +7,6 @@ uint8_t Sonar[] = {15, 2, 13, 12, 14, 27, 26, 25, 33, 32, 21, 34}; // pin_trig,p
 int lastIndexes[6] = {0, 0, 0, 0, 0, 0};
 bool isFull[6] = {0, 0, 0, 0, 0, 0};
 
-#define US_OFFSET 18
-
 unsigned long timers[6];
 
 int us_cm[6][3];
@@ -30,7 +28,7 @@ void sonar_init(uint16_t period)
     {
         if (i > 0)
         {
-            timers[i] = timers[i - 1] + US_OFFSET;
+            timers[i] = timers[i - 1] + PERIOD;
         }
         else
         {
@@ -80,36 +78,6 @@ int i = 0;
 unsigned int lastPeakTime = 250;
 int lastRight = 0;
 
-int lastRightVals[6];
-
-int getLastMin()
-{
-    int min = lastRightVals[0];
-
-    for (int i = 1; i < 6; i++)
-    {
-        if (lastRightVals[i] < min) {
-            min = lastRightVals[i];
-        }
-    }
-
-    return min;
-}
-
-int getLastMax()
-{
-    int max = lastRightVals[0];
-
-    for (int i = 1; i < 6; i++)
-    {
-        if (lastRightVals[i] > max) {
-            max = lastRightVals[i];
-        }
-    }
-
-    return max;
-}
-
 bool firstTime = true;
 
 int getRightPeak(int minimum)
@@ -121,7 +89,8 @@ int getRightPeak(int minimum)
     if (abs(delta) > MIN_WALL_THICKNESS && millis() - lastPeakTime > MAX_TIME_PASS_WALL)
     {
         // Purge first (from zero pos)
-        if (firstTime) {
+        if (firstTime)
+        {
             firstTime = false;
             return 0;
         }
@@ -175,13 +144,6 @@ void sonar_loop()
             sonar_values[i] = distance;
         }
     }
-
-    lastRightVals[0] = lastRightVals[1];
-    lastRightVals[1] = lastRightVals[2];
-    lastRightVals[2] = lastRightVals[3];
-    lastRightVals[3] = lastRightVals[4];
-    lastRightVals[4] = lastRightVals[5];
-    lastRightVals[5] = sonar_get(0);
 
     i = (i + 1) % 6;
 }
