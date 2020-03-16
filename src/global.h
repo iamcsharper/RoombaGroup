@@ -9,7 +9,7 @@ static const float pid_i = 0;
 static const float pid_s = 0.7f;
 // PID SETTINGS END
 
-#define default_state waiting_for_commands
+#define default_state glass_corridor
 
 #define DEBUG_ENABLED true
 #define ROOMBA_NUM 0

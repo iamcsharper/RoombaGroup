@@ -16,8 +16,8 @@ void wifi_init();
 
 void udp_init(); // Инициализация
 
-int udp_get(); // возвращает массив символов
+bool udp_get(); // возвращает массив символов
 
-void udp_send(const uint8_t *arr, int length, IPAddress ip); // отправляет массив символов на заданный IP и порт поумолчанию
+void udp_print(const uint8_t *arr, int length, IPAddress ip); // отправляет массив символов на заданный IP и порт поумолчанию
 
-void udp_print(const char *string, IPAddress ip);
+void udp_print(const uint8_t *arr, int length, IPAddress ip, int port); // отправляет массив символов на заданный IP и порт

@@ -5,7 +5,7 @@ WiFiUDP Udp;
 IPAddress myIP(192, 168, 1, 200 + ROOMBA_NUM);
 IPAddress masterIP(192, 168, 1, 200);
 
-char ssid[] = "Moscow33"; // название вашей сети EnoT_Master
+char ssid[] = "Moscow3"; // название вашей сети EnoT_Master
 char pass[] = "52635263";
 
 IPAddress gateway(192, 168, 1, 1);
@@ -48,9 +48,9 @@ void udp_init()
   }
 }
 
-void udp_send(const uint8_t *arr, int length, IPAddress ip)
+void udp_print(const uint8_t *arr, int length, IPAddress ip)
 {
-  Udp.beginPacket(ip, localUdpPort);
+  Udp.beginPacket(ip, localUdpPort); // общение
 
   for (int i = 0; i < length; i++)
     Udp.write(arr[i]);
@@ -58,22 +58,19 @@ void udp_send(const uint8_t *arr, int length, IPAddress ip)
   Udp.endPacket();
 }
 
-void udp_print(const char *string, IPAddress ip)
+void udp_print(const uint8_t *arr, int length, IPAddress ip, int port)
 {
-  Udp.beginPacket(ip, localUdpPort);
 
-  int i = 0;
-  while (!string[i])
-    Udp.write(string[i]);
+  Udp.beginPacket(ip, port); // общение
 
-  Udp.write('\0');
-
+  for (int i = 0; i < length; i++)
+    Udp.write(arr[i]);
   Udp.endPacket();
 }
 
 IPAddress lastRemoteIP;
 
-int udp_get()
+bool udp_get()
 {
   int packetSize = Udp.parsePacket();
 

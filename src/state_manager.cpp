@@ -4,7 +4,6 @@
 #include "sonar.h"
 #include "HMC5883L.h"
 #include "roomba.h"
-#include "network.h"
 
 GlobalState globalState = default_state;
 GlobalState prevState = default_state;
@@ -111,17 +110,14 @@ void state_manager_loop()
   }
   else if (globalState == waiting_for_commands)
   {
-    if (millis() - lastBlinkTime > 1000)
-    {
-      #if ROOMBA_NUM == 0
-        udp_print("123", IPAddress(192, 168, 1, 201));
-      #endif
-      lastBlinkTime = millis();
-    }
-    #if ROOMBA_NUM == 1
-      if (udp_get())
-        print("Packet get!\n");
-    #endif
+    // if (millis() - lastBlinkTime > 1000)
+    // {
+    //   setLED(on, on, on);
+    //   on = !on;
+    //   lastBlinkTime = millis();
+    //   print_f("Sonar: %i\n", sonar_get(0));
+    //   print_f("Compass: %f\n", GetCompass());
+    // }
   }
   else if (globalState == bt_control)
   {
