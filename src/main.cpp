@@ -13,8 +13,8 @@ void setup()
   debug_init();
   roomba_init();
   bluetooth_init();
-  // wifi_init();
-  // udp_init();
+  wifi_init();
+  udp_init();
   sonar_init(30);
   //compass_init();
 

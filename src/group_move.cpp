@@ -159,4 +159,8 @@ void slave_move_loop()
 
 void master_move_loop()
 {
+    if (millis() - target_move_timer > TARGET_MOVE_TIMER)
+    {
+        
+    }
 }
