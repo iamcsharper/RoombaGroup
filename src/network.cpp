@@ -5,8 +5,8 @@ WiFiUDP Udp;
 IPAddress myIP(192, 168, 1, 200 + ROOMBA_NUM);
 IPAddress masterIP(192, 168, 1, 200);
 
-char ssid[] = "Moscow3"; // название вашей сети EnoT_Master
-char pass[] = "52635263";
+char ssid[] = "LAB-NET"; // название вашей сети EnoT_Master
+char pass[] = "+74957208715";
 
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
@@ -70,7 +70,7 @@ void udp_print(const uint8_t *arr, int length, IPAddress ip, int port)
 
 IPAddress lastRemoteIP;
 
-bool udp_get()
+int udp_get()
 {
   int packetSize = Udp.parsePacket();
 

@@ -4,6 +4,8 @@
 #include "sonar.h"
 #include "HMC5883L.h"
 #include "roomba.h"
+#include "network.h"
+#include "group_move.h"
 
 GlobalState globalState = default_state;
 GlobalState prevState = default_state;
@@ -51,7 +53,7 @@ void resetGlassCorridor()
 {
 }
 
-MoveState stateAfterObstacle = Stop;
+MoveState stateAfterObstacle = (MoveState)Stop;
 
 void awaitObstacle(float until, float trig)
 {
@@ -83,6 +85,9 @@ bool areWeAtAngle()
   return abs(lastRotationDelta - extraRot - HALF_PI) < 0.01f;
 }
 
+char packetBuffer[255];
+int lastTime = 0;
+
 void state_manager_loop()
 {
   if (globalState == calibrate_compass)
@@ -110,14 +115,10 @@ void state_manager_loop()
   }
   else if (globalState == waiting_for_commands)
   {
-    // if (millis() - lastBlinkTime > 1000)
-    // {
-    //   setLED(on, on, on);
-    //   on = !on;
-    //   lastBlinkTime = millis();
-    //   print_f("Sonar: %i\n", sonar_get(0));
-    //   print_f("Compass: %f\n", GetCompass());
-    // }
+    if (millis() - lastBlinkTime > 1000)
+    {
+      lastBlinkTime = millis();
+    }
   }
   else if (globalState == bt_control)
   {
@@ -260,11 +261,11 @@ void state_manager_loop()
   }
   else if (globalState == masters_move)
   {
-    // end masters move
+    master_move_loop();
   }
   else if (globalState == slaves_move)
   {
-    // end slaves mode
+    slave_move_loop();
   }
   else if (globalState == free_move)
   {

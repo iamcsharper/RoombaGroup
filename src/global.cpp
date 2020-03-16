@@ -40,3 +40,12 @@ bool hasGoneObjectInFront() {
 }
 
 byte noop() { return 0; }
+
+int sign(float val)
+{
+  if (val < 0)
+  {
+    return -1;
+  }
+  return 1;
+}
