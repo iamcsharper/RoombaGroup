@@ -75,34 +75,6 @@ int _readCmSonar(uint8_t sonar_num)
 
 int i = 0;
 
-unsigned int lastPeakTime = 250;
-int lastRight = 0;
-
-bool firstTime = true;
-
-int getRightPeak(int minimum)
-{
-    int sonarRight = sonar_get(0);
-    int delta = sonarRight - lastRight; // TODO: try to replace lastSonarRight with minimum
-    lastRight = sonarRight;
-
-    if (abs(delta) > MIN_WALL_THICKNESS && millis() - lastPeakTime > MAX_TIME_PASS_WALL)
-    {
-        // Purge first (from zero pos)
-        if (firstTime)
-        {
-            firstTime = false;
-            return 0;
-        }
-
-        lastPeakTime = millis();
-
-        return delta;
-    }
-
-    return 0;
-}
-
 void sonar_loop()
 {
     if (millis() >= timers[i])

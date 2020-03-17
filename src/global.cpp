@@ -19,13 +19,12 @@ bool hasObjectInFront()
   if (right == 0)
     right = 200;
 
-  int dist = (int)(2.0f / (1.0f / left + 1.0f / right));
-
   // Мы еще не доехали до until
-  return (dist < 50 || hasFrontObstacle());
+  return (left < 30 || right < 30 || hasFrontObstacle());
 }
 
-bool hasGoneObjectInFront() {
+bool hasGoneObjectInFront()
+{
   int left = sonar_get(3);
   int right = sonar_get(2);
 
@@ -37,6 +36,27 @@ bool hasGoneObjectInFront() {
   int dist = (int)(2.0f / (1.0f / left + 1.0f / right));
 
   return (dist > 55 && isFrontClear());
+}
+
+void awaitObstacle(float until, float trig)
+{
+  if (lastCoveredDistance >= until - trig)
+    return;
+
+  if (hasObjectInFront())
+  {
+    driveDirect(0, 0);
+    stateAfterHitObstacle = moveState;
+    moveState = AwaitObstacleLeave;
+  }
+}
+
+void awaitObstacleLeave()
+{
+  if (hasGoneObjectInFront())
+  {
+    moveState = stateAfterHitObstacle;
+  }
 }
 
 byte noop() { return 0; }

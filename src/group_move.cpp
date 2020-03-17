@@ -1,15 +1,5 @@
 #include "group_move.h"
 
-enum MSState
-{
-    Stop,
-    Rotate,
-    Rotating,
-    Go_Forward,
-    Going_Forward
-} _state,
-    _prevState;
-
 float target_x = 0;
 float target_y = 0;
 
@@ -41,27 +31,29 @@ bool rotEpsilonParity = true;
 
 void slave_move_loop()
 {
-    int packet_size = 0;
-    if (packet_size = udp_get())
+    int packet_size = udp_get();
+    if (packet_size)
     {
         if (incomingPacket[0] == 0)
         {
-            _state = Stop;
+            moveState = Stop;
             print("Stop\n");
         }
         else if (incomingPacket[0] == 1)
         {
-            _state = Rotate;
+            moveState = RotateToTarget;
 
             target_x = (signed short)((signed short)(incomingPacket[1]) << 8 | incomingPacket[2]);
             target_y = (signed short)((signed short)(incomingPacket[3]) << 8 | incomingPacket[4]);
 
             print_f("Move to %f %f", target_x, target_y);
         }
-    }
-    for (int i = 0; i < packet_size; i++)
-    {
-        incomingPacket[i] = 255;
+
+        // Reset
+        for (int i = 0; i < packet_size; i++)
+        {
+            incomingPacket[i] = 255;
+        }
     }
 
     if (millis() - target_move_timer > TARGET_MOVE_TIMER)
@@ -69,7 +61,7 @@ void slave_move_loop()
         //delta encoders and distance
         int encoderLeft = encoderCountsLeft - initEncoderLeft;
         int encoderRight = encoderCountsRight - initEncoderRight;
-        float distance = (encoderLeft + encoderRight) / 2.0f * TICKS_TO_CM;
+        //float distance = (encoderLeft + encoderRight) / 2.0f * TICKS_TO_CM;
 
         float sqrDistanceToTarget = (target_x - x) * (target_x - x) + (target_y - y) * (target_y - y);
 
@@ -78,11 +70,11 @@ void slave_move_loop()
         iSeeLegs |= lbCenterLeft > 40;
         iSeeLegs |= lbCenterRight > 40;
 
-        if (_state == Stop)
+        if (moveState == Stop)
         {
             driveDirect(0, 0);
         }
-        else if (_state == Rotate)
+        else if (moveState == RotateToTarget)
         {
             // Вычисляем поворот
             rotation_target = calc_angle_to_target();
@@ -97,9 +89,9 @@ void slave_move_loop()
 
             resetInitEncoders();
             old_rotation = rotation; // Сохраняем текущее вращение
-            _state = Rotating;
+            moveState = RotatingToTarget;
         }
-        else if (_state == Rotating)
+        else if (moveState == RotatingToTarget)
         {
             lastTimeMovingForward = millis();
 
@@ -127,13 +119,13 @@ void slave_move_loop()
             if (shouldWeStopRotating)
             {
                 driveDirect(0, 0);
-                _state = Go_Forward;
+                moveState = Forward;
 
                 resetInitEncoders();
                 old_rotation = rotation; // Сохраняем текущее вращение
             }
         }
-        else if (_state == Go_Forward)
+        else if (moveState == Forward)
         {
             driveForwardWithRegulation(250, abs(encoderLeft - lastLeftEnc), abs(encoderRight - lastRightEnc));
 
@@ -142,14 +134,14 @@ void slave_move_loop()
 
             resetInitEncoders();
 
-            _state = Going_Forward;
+            moveState = GoingForward;
         }
-        else if (_state == Going_Forward)
+        else if (moveState == GoingForward)
         {
             // Условие выхода - мы подошли вплотную к точке
             if (sqrDistanceToTarget < 12 * 12)
             {
-                _state = Stop;
+                moveState = Stop;
             }
         }
 
@@ -161,6 +153,5 @@ void master_move_loop()
 {
     if (millis() - target_move_timer > TARGET_MOVE_TIMER)
     {
-        
     }
 }

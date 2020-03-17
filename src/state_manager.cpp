@@ -7,86 +7,73 @@
 #include "network.h"
 #include "group_move.h"
 
+#include "corridor_state.h"
+
 GlobalState globalState = default_state;
 GlobalState prevState = default_state;
 
 bool on = true;
-unsigned long lastBlinkTime = 0;
-
-enum MoveState
-{
-  Stop,
-  Forward,
-  GoingForward,
-  Left,
-  RotatingLeft,
-  Right,
-  RotatingRight,
-  AlongWallUntilObstacle,
-  AlongWallUntilDistance,
-
-  AwaitObstacleLeave
-};
 
 #if ROOMBA_NUM == 0
 MoveState stateAfterRotation = AlongWallUntilObstacle;
-#elif ROOMBA_NUM == 1
-MoveState stateAfterRotation = Forward;
 #endif
+
 MoveState moveState = AlongWallUntilDistance;
 MoveState stateAfterHitObstacle = Stop;
 
 bool calibrateFlag = false;
 
+#if ROOMBA_NUM == 0 || ROOMBA_NUM == 1
+int wallIndex = 0;
+float untilDistance = roomLength;
+float minimum = -1;
+float extraRot = 0;
+#endif
+
 void state_manager_init()
 {
 }
 
-int wallIndex = 0;
-float untilDistance = roomLength;
-
-float minimum = -1;
-
 void resetGlassCorridor()
 {
-}
 
-void awaitObstacle(float until, float trig)
-{
-  if (lastCoveredDistance >= until - trig)
-    return;
-
-  if (hasObjectInFront())
-  {
-    driveDirect(0, 0);
-    stateAfterHitObstacle = moveState;
-    moveState = AwaitObstacleLeave;
-  }
-}
-
-void awaitObstacleLeave()
-{
-  if (hasGoneObjectInFront())
-  {
-    moveState = stateAfterHitObstacle;
-  }
 }
 
 bool areWeAtDestination()
 {
-  return (lastCoveredDistance > untilDistance || abs(lastCoveredDistance - untilDistance) < 4);
+    return (lastCoveredDistance > untilDistance || abs(lastCoveredDistance - untilDistance) < 4);
 }
 
-float extraRot = 0;
-
-float howCloseIsAngle() {
-  return abs(lastRotationDelta - extraRot - HALF_PI);
+float howCloseIsAngle()
+{
+    return abs(lastRotationDelta - extraRot - HALF_PI);
 }
 
 bool areWeAtAngle()
 {
-  return howCloseIsAngle() < 0.01f;
+    return howCloseIsAngle() < 0.01f;
 }
+
+#if ROOMBA_NUM == 0 || ROOMBA_NUM == 1
+
+float reg = 0;
+float prev_dis = 0;
+float integral = 0;
+
+void drivePIDWall(float minimum)
+{
+  float dis = (sonar_get(0) - minimum) * 0.01;
+
+  reg = dis * pid_p - (dis - prev_dis) * pid_d - integral * pid_i;
+
+  integral += dis;
+
+  driveDirect(250 * clamp(-reg + pid_s, -pid_s, pid_s), 250 * clamp(reg + pid_s, -pid_s, pid_s));
+
+  prev_dis = dis;
+}
+
+#endif
 
 void state_manager_loop()
 {
@@ -115,10 +102,6 @@ void state_manager_loop()
   }
   else if (globalState == waiting_for_commands)
   {
-    if (millis() - lastBlinkTime > 1000)
-    {
-      lastBlinkTime = millis();
-    }
   }
   else if (globalState == bt_control)
   {
@@ -137,13 +120,6 @@ void state_manager_loop()
     if (minimum < 0)
     {
       minimum = sonar_get(0);
-    }
-
-    // For debugging with console :)
-    if (millis() >= lastBlinkTime)
-    {
-      lastBlinkTime = millis() + 200;
-      //print_f("front:%i     encoderLeft:%i    encoderRight=%i    dist:%f     until:%f\n", sonar_get(2), encoderLeft, encoderRight, lastCoveredDistance, untilDistance);
     }
 
     // Get center-right distance from about 5 to 300 cm
@@ -238,101 +214,12 @@ void state_manager_loop()
 
     // end glass corridor
   }
-#endif
+#elif ROOMBA_NUM == 1
   else if (globalState == long_corridor)
   {
-    // Set initial PID min
-    if (minimum <= 0)
-    {
-      minimum = sonar_get(0);
-    }
-
-    // Get center-right distance from about 5 to 300 cm
-    int frontDistance = sonar_get(2) < 1 ? 300 : sonar_get(2);
-
-    if (moveState == AwaitObstacleLeave)
-    {
-      awaitObstacleLeave(); //меняем состояние назад при удачном стечении обстоятельств
-    }
-    else if (moveState == Stop)
-    {
-      driveDirect(0, 0);
-    }
-    else if (moveState == AlongWallUntilDistance) // 0, 2
-    {
-      drivePIDWall(minimum);
-
-      // For debugging with console :)
-      if (millis() >= lastBlinkTime)
-      {
-        lastBlinkTime = millis() + 200;
-        print_f("Journey: %i ; Target distance: %i ; Right: %i ; Min: %i\n", (int)lastCoveredDistance, sonar_get(0), (int)minimum);
-        if (moveState != lastState) {
-          print_f("CHANGED STATE: %i\n");
-        }
-
-      }
-
-      ///  |
-      ///  |
-      ///  |
-      ///  |____       <-->
-      ///^     |
-      // ()    |
-
-      minimum += getRightPeak(minimum); // обратно меняем
-
-      awaitObstacle(untilDistance, 30 + 2 * minimum);
-
-      if (areWeAtDestination() || doSeeVirtualWall())
-      {
-        //movementType = Stop;
-        moveState = Left;
-        stateAfterRotation = Forward;
-        untilDistance = roomWidth;
-      }
-    }
-    else if (moveState == Forward)
-    {
-      driveForwardWithRegulation(100, encoderLeft - lastLeftEnc, encoderRight - lastRightEnc);
-      moveState = GoingForward;
-    }
-    else if (moveState == GoingForward)
-    {
-      driveForwardWithRegulation(100, encoderLeft - lastLeftEnc, encoderRight - lastRightEnc);
-      awaitObstacle(untilDistance, 35 + 2 * minimum);
-
-      if (frontDistance < minimum+10 && areWeAtDestination())
-      {
-        stateAfterRotation = AlongWallUntilDistance;
-        untilDistance = roomLength;
-        moveState = Left;
-      }
-    }
-    else if (moveState == Left)
-    {
-      extraRot = (encoderLeft - encoderRight) / TICKS_ONE_TURN * PI;
-      resetInitEncoders();
-      moveState = RotatingLeft;
-      driveDirect(0, 0);
-    }
-    else if (moveState == RotatingLeft)
-    {
-      driveRotateWithRegulation(100*clamp(howCloseIsAngle(), 0.5f, 1), 1, encoderLeft - lastLeftEnc, encoderRight - lastRightEnc);
-
-      if (areWeAtAngle())
-      {
-        minimum = sonar_get(0);
-
-        driveDirect(0, 0);
-        //minimum = sonar_get(0);
-        moveState = stateAfterRotation;
-        resetInitEncoders();
-        wallIndex = (wallIndex + 1) % 4;
-      }
-    }
-    // end long corridor
+    corridor_state_loop();
   }
+#endif
   else if (globalState == darkness_to_scene)
   {
     // end darkness to scene
@@ -361,6 +248,4 @@ void state_manager_loop()
   {
     // end return base
   }
-
-  lastState = moveState;
 }

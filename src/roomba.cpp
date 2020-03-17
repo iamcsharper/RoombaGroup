@@ -230,6 +230,8 @@ byte handlePacket(byte id)
     waitSize -= 2;
     return lbmm + rbmm;
   }
+
+  return 0;
 }
 
 bool handleSensors()
@@ -376,23 +378,6 @@ bool doSeeVirtualWall()
 bool hasFrontObstacle()
 {
   return lbCenterLeft > 20 || lbCenterRight > 20;
-}
-
-float reg = 0;
-float prev_dis = 0;
-float integral = 0;
-
-void drivePIDWall(float minimum)
-{
-  float dis = (sonar_get(0) - minimum) * 0.01;
-
-  reg = dis * pid_p - (dis - prev_dis) * pid_d - integral * pid_i;
-
-  integral += dis;
-
-  driveDirect(250 * clamp(-reg + pid_s, -pid_s, pid_s), 250 * clamp(reg + pid_s, -pid_s, pid_s));
-
-  prev_dis = dis;
 }
 
 // END PID
