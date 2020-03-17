@@ -43,8 +43,8 @@ void getJoystickState(byte data[8])
 
 unsigned long pingTime = 0;
 
-
-BluetoothSerial getBTSerial() {
+BluetoothSerial getBTSerial()
+{
   return SerialBT;
 }
 

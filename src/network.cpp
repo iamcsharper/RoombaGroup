@@ -5,8 +5,10 @@ WiFiUDP Udp;
 IPAddress myIP(192, 168, 1, 200 + ROOMBA_NUM);
 IPAddress masterIP(192, 168, 1, 200);
 
-char ssid[] = "LAB-NET"; // название вашей сети EnoT_Master
-char pass[] = "+74957208715";
+// char ssid[] = "LAB-NET"; // название вашей сети EnoT_Master
+// char pass[] = "+74957208715";
+char ssid[] = "Mi"; // название вашей сети EnoT_Master
+char pass[] = "";
 
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
@@ -19,7 +21,7 @@ void wifi_init() //статический IP)
   while (WiFi.status() != WL_CONNECTED)
   {
     WiFi.mode(WIFI_STA);
-    WiFi.config(myIP, gateway, subnet);
+    WiFi.config(myIP, gateway, subnet, IPAddress(10,0,1,1));
     WiFi.begin(ssid, pass);
 
     int secs = 0;

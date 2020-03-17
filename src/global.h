@@ -23,7 +23,8 @@ static const float pid_s = 0.7f;
 #define default_state glass_corridor
 
 // PID SETTINGS END
-#elif ROOMBA_NUM == 1
+#endif
+#if ROOMBA_NUM == 1
 static const int pid_p = 1;
 static const int pid_d = -25;
 static const float pid_i = 0;
@@ -44,7 +45,9 @@ static const float pid_s = 0.9f;
 byte noop();
 
 #define print(text) DEBUG_ENABLED ? Serial.print(text) : noop()
-#define print_f(...) DEBUG_ENABLED ? getBTSerial().printf(__VA_ARGS__) : noop()
+
+#define print_f(...) DEBUG_ENABLED ? Serial.printf(__VA_ARGS__) : noop()
+#define bt_print_f(...) DEBUG_ENABLED ? getBTSerial().printf(__VA_ARGS__) : noop()
 
 void debug_init();
 
