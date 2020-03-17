@@ -2,8 +2,6 @@
 #include "roomba.h"
 #include "sonar.h"
 
-
-
 const int ddPin = 22;
 unsigned long driveTime = 0;
 uint8_t bumpsWheeldrops = 0; //7
@@ -399,7 +397,7 @@ void drivePIDWall(float minimum)
 
 // END PID
 
-bool isFrontClear() 
+bool isFrontClear()
 {
   return lbCenterLeft < 30 && lbCenterRight < 30;
 }

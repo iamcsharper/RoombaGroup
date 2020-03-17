@@ -15,7 +15,7 @@ void setup()
   bluetooth_init();
   wifi_init();
   udp_init();
-  sonar_init(30);
+  sonar_init(22);
   //compass_init();
 
   state_manager_init();

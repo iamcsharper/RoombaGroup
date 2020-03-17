@@ -1,4 +1,5 @@
 #include "bluetooth.h"
+#include "sonar.h"
 
 #define STX 0x02
 #define ETX 0x03
@@ -17,7 +18,7 @@ bool flag; // Флаг ожидания новых данных от Bluetooth
 
 void bluetooth_init()
 {
-  SerialBT.begin("Roomba " + String(ROOMBA_NUM)); // BlueTooth device name
+  SerialBT.begin("Roomba #" + String(ROOMBA_NUM)); // BlueTooth device name
   while (SerialBT.available())
     SerialBT.read(); // empty RX buffer
 }
@@ -41,6 +42,12 @@ void getJoystickState(byte data[8])
 }
 
 unsigned long pingTime = 0;
+
+
+BluetoothSerial getBTSerial() {
+  return SerialBT;
+}
+
 void bluetooth_loop()
 {
   if (!bluetooth_timeout() && globalState != bt_control)

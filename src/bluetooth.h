@@ -14,3 +14,5 @@ void bluetooth_loop();
 void getJoystickState(byte data[8]);
 void bluetooth_move();
 bool bluetooth_timeout();
+
+BluetoothSerial getBTSerial();
