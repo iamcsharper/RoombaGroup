@@ -6,10 +6,14 @@
 
 // 0 - Вика
 // 1 - Марина
-#define ROOMBA_NUM 1
+
+// 2 - слейв
+// 3 - мастер
+#define ROOMBA_NUM 2
 
 // PID SETTINGS
 #if ROOMBA_NUM == 0
+
 static const int pid_p = 2;
 static const int pid_d = -20;
 static const float pid_i = 0;
@@ -19,6 +23,7 @@ static const float pid_s = 0.7f;
 
 // PID SETTINGS END
 #elif ROOMBA_NUM == 1
+
 static const int pid_p = 1;
 static const int pid_d = -25;
 static const float pid_i = 0;
@@ -28,6 +33,10 @@ static const float pid_s = 0.9f;
 
 #define MIN_WALL_THICKNESS 5
 #define MAX_TIME_PASS_WALL 200 // ms of DIFFERENTIAL pulse
+
+#elif ROOMBA_NUM == 2
+
+#define default_state slaves_move
 
 #endif
 

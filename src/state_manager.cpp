@@ -32,6 +32,27 @@ enum MoveState
 MoveState stateAfterRotation = AlongWallUntilObstacle;
 #elif ROOMBA_NUM == 1
 MoveState stateAfterRotation = Forward;
+int wallIndex = 0;
+float untilDistance = roomLength;
+
+float minimum = -1;
+
+bool areWeAtDestination()
+{
+  return (lastCoveredDistance > untilDistance || abs(lastCoveredDistance - untilDistance) < 4);
+}
+
+float extraRot = 0;
+
+float howCloseIsAngle()
+{
+  return abs(lastRotationDelta - extraRot - HALF_PI);
+}
+
+bool areWeAtAngle()
+{
+  return howCloseIsAngle() < 0.01f;
+}
 #endif
 MoveState moveState = AlongWallUntilDistance;
 MoveState stateAfterHitObstacle = Stop;
@@ -41,11 +62,6 @@ bool calibrateFlag = false;
 void state_manager_init()
 {
 }
-
-int wallIndex = 0;
-float untilDistance = roomLength;
-
-float minimum = -1;
 
 void resetGlassCorridor()
 {
@@ -70,22 +86,6 @@ void awaitObstacleLeave()
   {
     moveState = stateAfterHitObstacle;
   }
-}
-
-bool areWeAtDestination()
-{
-  return (lastCoveredDistance > untilDistance || abs(lastCoveredDistance - untilDistance) < 4);
-}
-
-float extraRot = 0;
-
-float howCloseIsAngle() {
-  return abs(lastRotationDelta - extraRot - HALF_PI);
-}
-
-bool areWeAtAngle()
-{
-  return howCloseIsAngle() < 0.01f;
 }
 
 void state_manager_loop()
@@ -238,7 +238,7 @@ void state_manager_loop()
 
     // end glass corridor
   }
-#endif
+#elif ROOMBA_NUM == 1
   else if (globalState == long_corridor)
   {
     // Set initial PID min
@@ -267,10 +267,6 @@ void state_manager_loop()
       {
         lastBlinkTime = millis() + 200;
         print_f("Journey: %i ; Target distance: %i ; Right: %i ; Min: %i\n", (int)lastCoveredDistance, sonar_get(0), (int)minimum);
-        if (moveState != lastState) {
-          print_f("CHANGED STATE: %i\n");
-        }
-
       }
 
       ///  |
@@ -302,7 +298,7 @@ void state_manager_loop()
       driveForwardWithRegulation(100, encoderLeft - lastLeftEnc, encoderRight - lastRightEnc);
       awaitObstacle(untilDistance, 35 + 2 * minimum);
 
-      if (frontDistance < minimum+10 && areWeAtDestination())
+      if (frontDistance < minimum + 10 && areWeAtDestination())
       {
         stateAfterRotation = AlongWallUntilDistance;
         untilDistance = roomLength;
@@ -318,7 +314,7 @@ void state_manager_loop()
     }
     else if (moveState == RotatingLeft)
     {
-      driveRotateWithRegulation(100*clamp(howCloseIsAngle(), 0.5f, 1), 1, encoderLeft - lastLeftEnc, encoderRight - lastRightEnc);
+      driveRotateWithRegulation(100 * clamp(howCloseIsAngle(), 0.5f, 1), 1, encoderLeft - lastLeftEnc, encoderRight - lastRightEnc);
 
       if (areWeAtAngle())
       {
@@ -333,6 +329,7 @@ void state_manager_loop()
     }
     // end long corridor
   }
+#endif
   else if (globalState == darkness_to_scene)
   {
     // end darkness to scene
@@ -361,6 +358,4 @@ void state_manager_loop()
   {
     // end return base
   }
-
-  lastState = moveState;
 }
