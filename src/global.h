@@ -15,7 +15,7 @@ static const int pid_d = -20;
 static const float pid_i = 0;
 static const float pid_s = 0.7f;
 
-#define default_state glass_corridor
+#define default_state slaves_move
 
 // PID SETTINGS END
 #elif ROOMBA_NUM == 1
@@ -57,3 +57,5 @@ void debug_init();
 bool hasObjectInFront();
 // Объект ушел (гистерезис)
 bool hasGoneObjectInFront();
+
+int sign(float val);
